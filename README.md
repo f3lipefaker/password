@@ -129,7 +129,7 @@ export default router;
 
 ## 🧑‍💻 Autor
 
-Desenvolvido por **[Seu Nome]**
+Desenvolvido por **[Felipe Borges]**
 📧 Contato: [[fbdomingoss@gmail.com](mailto:fbdomingoss@gmail.com)]
 🌐 GitHub: [https://github.com/f3lipefaker](https://github.com/f3lipefaker)
 
