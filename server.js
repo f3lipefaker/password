@@ -10,6 +10,8 @@ dotenvConfig();
 
 const app = express();
 
+app.set('trust proxy', 1); // 1 = confia em 1 proxy/ingress na frente
+
 // ==========================================
 // CONFIGURAÇÕES DE RATE LIMITING (PROTEÇÃO)
 // ==========================================
@@ -50,14 +52,9 @@ app.use(cors());
 // Nota: Seu middleware customizado de CORS pode ser simplificado se usar apenas o pacote cors(),
 // mas mantido para respeitar seu fluxo:
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-    } else {
-        next();
-    }
+    console.log('remoteAddress (TCP):', req.socket.remoteAddress);
+    console.log('X-Forwarded-For:', req.headers['x-forwarded-for']);
+    next();
 });
 
 // ==========================================
