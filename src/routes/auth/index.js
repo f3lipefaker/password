@@ -71,6 +71,8 @@ router.get('/check-ip', (req, res) => {
     // Pega o IP do cliente (considerando proxies/headers)
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
 
+    console.log("Acesso: ", clientIp);
+
     // Verifica se o IP pertence à sub-rede 192.168.44.X
     const isAllowed = clientIp.includes('192.168.44.') || '192.168.34.'
 
@@ -99,34 +101,34 @@ router.patch('/admin/passwords/:id/status', async (req, res) => {
 
         return res.status(200).json({ message: 'Status atualizado com sucesso!' });
 
-// Request URL
-// https://cloud.segware.com.br/server/api/v2/2231/accounts/1381834/usersAndContact
-// {
-//     "email": "felipe@viptech.com.br",
-//     "nextel": "senha4",
-//     "allPartitions": true,
-//     "phone01": "44991142300",
-//     "taxpayerIdentification": "00000",
-//     "identificationNumber": "rg",
-//     "receivesIvrCall": false,
-//     "receivesIvrWhatsappNotification": false,
-//     "whatsappPhone01": false,
-//     "countryCodePhone01": 55,
-//     "whatsappPhone02": false,
-//     "countryCodePhone02": 55,
-//     "list": 0,
-//     "questionPassword": "",
-//     "answerPassword": "senhav",
-//     "showUserAsContact": true,
-//     "countrySiglaPhone01": "BR",
-//     "countrySiglaPhone02": "BR",
-//     "contactReason": [],
-//     "partitionPanelCode": [],
-//     "name": "Felipe Borges",
-//     "priority": 0,
-//     "id": 15592843,
-//     "phone02": "44991142300"
-// }
+        // Request URL
+        // https://cloud.segware.com.br/server/api/v2/2231/accounts/1381834/usersAndContact
+        // {
+        //     "email": "felipe@viptech.com.br",
+        //     "nextel": "senha4",
+        //     "allPartitions": true,
+        //     "phone01": "44991142300",
+        //     "taxpayerIdentification": "00000",
+        //     "identificationNumber": "rg",
+        //     "receivesIvrCall": false,
+        //     "receivesIvrWhatsappNotification": false,
+        //     "whatsappPhone01": false,
+        //     "countryCodePhone01": 55,
+        //     "whatsappPhone02": false,
+        //     "countryCodePhone02": 55,
+        //     "list": 0,
+        //     "questionPassword": "",
+        //     "answerPassword": "senhav",
+        //     "showUserAsContact": true,
+        //     "countrySiglaPhone01": "BR",
+        //     "countrySiglaPhone02": "BR",
+        //     "contactReason": [],
+        //     "partitionPanelCode": [],
+        //     "name": "Felipe Borges",
+        //     "priority": 0,
+        //     "id": 15592843,
+        //     "phone02": "44991142300"
+        // }
 
     } catch (error) {
         console.error('Erro no banco de dados:', error);
