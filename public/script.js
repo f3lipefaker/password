@@ -225,14 +225,14 @@ const chatSteps = [
     { key: 'cliente', label: 'Qual o nome ou código do cliente/conta?' },
     { key: 'name', label: 'Qual é o seu nome completo?' },
     { key: 'email', label: 'Informe seu e-mail:' },
-    { key: 'phone', label: 'Seu telefone (ou "pular"):' },
+    { key: 'phone', label: 'Seu telefone:' },
     { key: 'cpf', label: 'Seu CPF (ou "pular"):' },
     { key: 'rg', label: 'Seu RG (ou "pular"):' },
     { key: 'function', label: 'Sua Função/Cargo:' },
-    { key: 'app', label: 'Você utiliza o Aplicativo Mobile? (Responda "sim" ou "nao")' },
-    { key: 'pass_app', label: 'Qual a Senha da Aplicação?' },
-    { key: 'pass_alr', label: 'Senha do Alarme (ou "pular"):' },
-    { key: 'pass_verbal', label: 'Senha Verbal / Contra-Signo (ou "pular"):' }
+    { key: 'app', label: 'Você deseja utilizar o Aplicativo Viptech? (Responda "sim" ou "nao")' },
+    { key: 'pass_app', label: 'Qual a Senha para acesso ao App?' },
+    { key: 'pass_alr', label: 'Senha do Alarme: São 4 dígitos' },
+    { key: 'pass_verbal', label: 'Senha Verbal / Contra-Senha:' }
 ];
 
 let chatStep = 0;
@@ -266,35 +266,88 @@ async function sendChatAnswer() {
     const val = input.value.trim();
     if (!val) return;
 
+    const currentKey = chatSteps[chatStep].key;
+
+    // Lista de chaves obrigatórias
+    const requiredKeys = ['cliente', 'name', 'email', 'phone', 'pass_alr', 'pass_verbal'];
+
+    // Bloqueia a palavra "pular" em campos obrigatórios
+    if (requiredKeys.includes(currentKey) && val.toLowerCase() === 'pular') {
+        addMsg(val, 'user');
+        input.value = '';
+        setTimeout(() => addMsg('⚠️ Este campo é obrigatório e não pode ser pulado. Por favor, informe o dado solicitado:', 'bot'), 300);
+        return;
+    }
+
+    // Validação específica para Senha do Alarme (exatamente 4 dígitos numéricos)
+    if (currentKey === 'pass_alr') {
+        const cleanVal = val.replace(/\D/g, ''); // Mantém apenas números
+        if (cleanVal.length !== 4 || val.length !== 4) {
+            addMsg(val, 'user');
+            input.value = '';
+            setTimeout(() => addMsg('⚠️ A Senha do Alarme precisa ter exatamente 4 dígitos numéricos. Tente novamente:', 'bot'), 300);
+            return;
+        }
+    }
+
     addMsg(val, 'user');
     input.value = '';
 
-    const currentKey = chatSteps[chatStep].key;
-
+    // Lógica para o campo do APLICATIVO
     if (currentKey === 'app') {
-        const isYes = val.toLowerCase().includes('s');
+        const isYes = val.toLowerCase().includes('s') || val.toLowerCase() === 'sim';
         chatData['app'] = isYes;
 
-        if (isYes && (deviceMeta.os === 'android' || deviceMeta.os === 'ios')) {
-            const url = APP_URLS[deviceMeta.os];
-            addMsg(`Baixe o app se necessário: <a href="${url}" target="_blank" style="color:var(--accent);">Clique Aqui</a>.`, 'bot');
-        } else if (!isYes) {
+        if (isYes) {
+            // Se aceitou o App mas não forneceu e-mail antes
+            if (!chatData['email'] || chatData['email'].trim() === '') {
+                setTimeout(() => {
+                    addMsg('⚠️ Para utilizar o Aplicativo Viptech, é obrigatório possuir um e-mail cadastrado.', 'bot');
+                    chatSteps.splice(chatStep + 1, 0, { key: 'email_retry', label: 'Por favor, informe seu e-mail para o acesso ao App:' });
+                    chatStep++;
+                    addMsg(chatSteps[chatStep].label, 'bot');
+                }, 400);
+                return;
+            }
+
+            if (deviceMeta.os === 'android' || deviceMeta.os === 'ios') {
+                const url = APP_URLS[deviceMeta.os];
+                setTimeout(() => {
+                    addMsg(`Baixe o app se necessário: <a href="${url}" target="_blank" style="color:var(--accent); font-weight:bold;">Clique Aqui para Baixar</a>.`, 'bot');
+                }, 300);
+            }
+        } else {
+            // Se disse "não", pula a etapa de senha do app
             chatData['pass_app'] = '';
-            chatStep++;
+            const passAppIndex = chatSteps.findIndex(step => step.key === 'pass_app');
+            if (passAppIndex !== -1 && chatStep < passAppIndex) {
+                chatStep = passAppIndex; 
+            }
         }
-    } else {
+    } 
+    // Re-tentativa de e-mail (caso o usuário tenha sido obrigado a preencher após aceitar o app)
+    else if (currentKey === 'email_retry') {
+        if (val.toLowerCase() === 'pular' || !val) {
+            setTimeout(() => addMsg('⚠️ É necessário informar um e-mail válido para usar o aplicativo:', 'bot'), 300);
+            return;
+        }
+        chatData['email'] = val;
+    } 
+    // Outros campos
+    else {
         chatData[currentKey] = (val.toLowerCase() === 'pular') ? '' : val;
     }
 
     chatStep++;
 
+    // Próxima mensagem ou envio final
     if (chatStep < chatSteps.length) {
-        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 400);
+        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 500);
     } else {
         setTimeout(async () => {
             addMsg('Obrigado! Salvando suas credenciais...', 'bot');
             await sendPayload({ device: deviceMeta.type, device_meta: deviceMeta, ...chatData }, 'chat');
-        }, 500);
+        }, 600);
     }
 }
 
