@@ -10,9 +10,13 @@ const router = Router();
 // Rota para checar se a origem é local (192.168.44.*)
 router.get('/check-ip', (req, res) => {
     // Pega o IP do cliente (considerando proxies/headers)
-    const clientIp = req.headers['x-forwarded-for']
+    let clientIp = req.headers['x-forwarded-for']
 
     console.log("Acesso: ", clientIp);
+
+    if (!clientIp) {
+        clientIp = req.socket.remoteAddress
+    }
 
     // Verifica se o IP pertence à sub-rede 192.168.44.X
     const isAllowed = clientIp.includes('192.168.44.')

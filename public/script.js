@@ -249,8 +249,8 @@ function addMsg(text, sender) {
 
 function startChat() {
     if (clienteLocked) {
-        // Cliente já veio travado por parâmetro: pula a primeira pergunta
         chatData['cliente'] = clienteParam;
+        syncChatToForm('cliente', clienteParam); // 🔄 Garante que o formulário receba o valor no inicio
         chatStep = 1;
         addMsg(`Olá! Sou o assistente de cadastro. Detectei que você está acessando via <strong>${deviceMeta.type}</strong>.`, 'bot');
         setTimeout(() => addMsg(`Cliente já definido como <strong>${clienteParam}</strong> ✅`, 'bot'), 350);
@@ -271,7 +271,7 @@ async function sendChatAnswer() {
     // Lista de chaves obrigatórias
     const requiredKeys = ['cliente', 'name', 'email', 'phone', 'pass_alr', 'pass_verbal'];
 
-    // Bloqueia a palavra "pular" em campos obrigatórios
+    // Bloqueia "pular" em campos obrigatórios
     if (requiredKeys.includes(currentKey) && val.toLowerCase() === 'pular') {
         addMsg(val, 'user');
         input.value = '';
@@ -279,9 +279,9 @@ async function sendChatAnswer() {
         return;
     }
 
-    // Validação específica para Senha do Alarme (exatamente 4 dígitos numéricos)
+    // Validação da Senha do Alarme (exatamente 4 dígitos numéricos)
     if (currentKey === 'pass_alr') {
-        const cleanVal = val.replace(/\D/g, ''); // Mantém apenas números
+        const cleanVal = val.replace(/\D/g, '');
         if (cleanVal.length !== 4 || val.length !== 4) {
             addMsg(val, 'user');
             input.value = '';
@@ -297,9 +297,9 @@ async function sendChatAnswer() {
     if (currentKey === 'app') {
         const isYes = val.toLowerCase().includes('s') || val.toLowerCase() === 'sim';
         chatData['app'] = isYes;
+        syncChatToForm('app', isYes); // 🔄 Sincroniza o checkbox no formulário
 
         if (isYes) {
-            // Se aceitou o App mas não forneceu e-mail antes
             if (!chatData['email'] || chatData['email'].trim() === '') {
                 setTimeout(() => {
                     addMsg('⚠️ Para utilizar o Aplicativo Viptech, é obrigatório possuir um e-mail cadastrado.', 'bot');
@@ -317,30 +317,33 @@ async function sendChatAnswer() {
                 }, 300);
             }
         } else {
-            // Se disse "não", pula a etapa de senha do app
             chatData['pass_app'] = '';
+            syncChatToForm('pass_app', ''); // 🔄 Limpa a senha do app no formulário
             const passAppIndex = chatSteps.findIndex(step => step.key === 'pass_app');
             if (passAppIndex !== -1 && chatStep < passAppIndex) {
                 chatStep = passAppIndex; 
             }
         }
     } 
-    // Re-tentativa de e-mail (caso o usuário tenha sido obrigado a preencher após aceitar o app)
+    // Re-tentativa de e-mail (caso o usuário tenha sido obrigado a informar após aceitar o app)
     else if (currentKey === 'email_retry') {
         if (val.toLowerCase() === 'pular' || !val) {
             setTimeout(() => addMsg('⚠️ É necessário informar um e-mail válido para usar o aplicativo:', 'bot'), 300);
             return;
         }
         chatData['email'] = val;
+        syncChatToForm('email', val); // 🔄 Sincroniza o e-mail no formulário
     } 
-    // Outros campos
+    // Captura os demais campos
     else {
-        chatData[currentKey] = (val.toLowerCase() === 'pular') ? '' : val;
+        const finalVal = (val.toLowerCase() === 'pular') ? '' : val;
+        chatData[currentKey] = finalVal;
+        syncChatToForm(currentKey, finalVal); // 🔄 Sincroniza o campo no formulário em tempo real
     }
 
     chatStep++;
 
-    // Próxima mensagem ou envio final
+    // Próxima pergunta ou envio
     if (chatStep < chatSteps.length) {
         setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 500);
     } else {
@@ -358,12 +361,27 @@ async function sendPayload(data, origin) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+
         if (res.ok) {
-            if (origin === 'form') {
-                document.getElementById('traditionalForm').style.display = 'none';
+            // 🚫 Desabilita o formulário tradicional para evitar envios duplicados
+            const form = document.getElementById('traditionalForm');
+            if (form) {
+                // Desativa todos os campos e o botão de envio do formulário
+                const elements = form.querySelectorAll('input, button');
+                elements.forEach(el => el.disabled = true);
+                
+                // Oculta o formulário e exibe a tela de sucesso
+                form.style.display = 'none';
                 document.getElementById('success-screen').style.display = 'flex';
-            } else {
+            }
+
+            if (origin === 'chat') {
                 addMsg('✅ Cadastro realizado com sucesso!', 'bot');
+                // Oculta a área de digitação do chat para impedir novos envios pelo bot
+                const chatInputGroup = document.getElementById('chatInputGroup');
+                if (chatInputGroup) {
+                    chatInputGroup.style.display = 'none';
+                }
             }
         } else {
             alert('Erro ao enviar o cadastro. Tente novamente.');
@@ -444,3 +462,41 @@ document.addEventListener('DOMContentLoaded', () => {
         tooltips.forEach(tooltip => tooltip.classList.remove('active'));
     });
 });
+
+// Função que sincroniza os dados do Chat diretamente nos inputs do Formulário HTML
+function syncChatToForm(key, value) {
+    const mapKeysToInputIds = {
+        cliente: 'f_search_client',
+        name: 'f_name',
+        email: 'f_email',
+        phone: 'f_phone',
+        cpf: 'f_cpf',
+        rg: 'f_rg',
+        function: 'f_function',
+        pass_app: 'f_pass_app',
+        pass_alr: 'f_pass_alr',
+        pass_verbal: 'f_pass_verbal'
+    };
+
+    // Preenche o input correspondente no formulário se ele existir
+    if (mapKeysToInputIds[key]) {
+        const inputEl = document.getElementById(mapKeysToInputIds[key]);
+        if (inputEl) {
+            inputEl.value = value;
+            
+            // Caso seja o campo cliente, preenchemos também o campo oculto
+            if (key === 'cliente') {
+                document.getElementById('f_cliente_selected').value = value;
+            }
+        }
+    }
+
+    // Se o campo for a resposta do Aplicativo (checkbox/toggle)
+    if (key === 'app') {
+        const appCheckbox = document.getElementById('f_app');
+        if (appCheckbox) {
+            appCheckbox.checked = value;
+            toggleAppInput(value); // Ativa/desativa o campo de senha do App no formulário
+        }
+    }
+}
