@@ -56,20 +56,9 @@
         html,
         body {
             width: 100%;
-            min-height: 100vh;
-            background-color: #0d1117;
-            /* SUBSTITUA por a cor exata do seu fundo (ex: #0d1117, #131525, etc) */
-            background-image: linear-gradient(135deg, #0d0e15 0%, #171930 100%);
-            /* Caso use gradiente */
-            overflow-x: hidden;
-            /* Evita rolagem horizontal indesejada */
-        }
-
-        html,
-        body {
-            height: 100%;
             overflow: hidden;
-            /* Elimina scroll da janela inteira */
+            background-color: #0d1117;
+            background-image: linear-gradient(135deg, #0d0e15 0%, #171930 100%);
         }
 
         a,
@@ -189,7 +178,7 @@
         /* Ajuste no container para permitir exibição externa de elementos com z-index alto */
         .view {
             overflow-y: auto;
-            overflow-x: visible;
+            overflow-x: hidden;
             /* Permite que tooltips se projetem nas laterais */
         }
 
