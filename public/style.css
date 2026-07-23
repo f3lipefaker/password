@@ -45,6 +45,26 @@
             scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
         }
 
+        /* Reset padrão para remover margens e preenchimentos da página */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Força o fundo da página inteira (e dos navegadores móveis) a usar a mesma cor escuro-azulado */
+        html,
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background-color: #0d1117;
+            /* SUBSTITUA por a cor exata do seu fundo (ex: #0d1117, #131525, etc) */
+            background-image: linear-gradient(135deg, #0d0e15 0%, #171930 100%);
+            /* Caso use gradiente */
+            overflow-x: hidden;
+            /* Evita rolagem horizontal indesejada */
+        }
+
         html,
         body {
             height: 100%;
