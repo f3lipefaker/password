@@ -368,3 +368,26 @@ async function toggleVistStatus(id, currentStatus) {
         alert('Erro ao se conectar com o servidor.');
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tooltips = document.querySelectorAll('.info-tooltip');
+
+    tooltips.forEach(tooltip => {
+        tooltip.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evita que o evento feche o tooltip imediatamente
+            
+            // Fecha outros tooltips abertos antes de abrir o atual
+            tooltips.forEach(item => {
+                if (item !== tooltip) item.classList.remove('active');
+            });
+
+            // Alterna a exibição no elemento clicado
+            tooltip.classList.toggle('active');
+        });
+    });
+
+    // Se o usuário tocar fora do tooltip, ele fecha
+    document.addEventListener('click', () => {
+        tooltips.forEach(tooltip => tooltip.classList.remove('active'));
+    });
+});

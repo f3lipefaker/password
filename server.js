@@ -45,7 +45,7 @@ const authLimiter = rateLimit({
 // Aplica o bloqueio/limite global em todas as rotas
 app.use(globalLimiter);
 
-app.use(express.static('public')); 
+app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -64,7 +64,7 @@ app.use((req, res, next) => {
 import auth from './src/routes/auth/index.js';
 
 // Aplica o limiter mais estrito especificamente na rota de Auth
-app.use('/api/v1', authLimiter, auth); 
+app.use('/api/v1', authLimiter, auth);
 // Nota: Se suas rotas forem dentro de '/api/v1', ajuste o prefixo conforme necessário.
 
 // ==========================================

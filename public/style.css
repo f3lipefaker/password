@@ -186,6 +186,13 @@
             animation: fadeIn 0.3s ease-in-out;
         }
 
+        /* Ajuste no container para permitir exibição externa de elementos com z-index alto */
+        .view {
+            overflow-y: auto;
+            overflow-x: visible;
+            /* Permite que tooltips se projetem nas laterais */
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -512,11 +519,14 @@
             margin-left: 6px;
             cursor: pointer;
             color: var(--accent);
+            -webkit-tap-highlight-color: transparent;
         }
 
         .info-tooltip i {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             transition: color 0.2s;
+            pointer-events: none;
+            /* Garante que o clique seja registrado na tag pai */
         }
 
         .info-tooltip:hover i {
@@ -526,32 +536,34 @@
         /* Caixa do Popup/Tooltip */
         .info-tooltip .tooltip-text {
             visibility: hidden;
-            width: 240px;
+            width: 220px;
             background-color: #0f172a;
             color: var(--text);
             text-align: left;
             border-radius: 8px;
-            padding: 8px 12px;
+            padding: 10px 12px;
             border: 1px solid var(--card-border);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
             font-size: 0.75rem;
             font-weight: normal;
             line-height: 1.3;
 
-            /* Posicionamento acima do ícone */
+            /* Posicionamento e Camadas */
             position: absolute;
-            z-index: 20;
-            bottom: 125%;
+            z-index: 9999 !important;
+            /* Fica acima de qualquer outro elemento */
+            bottom: 130%;
             left: 50%;
             transform: translateX(-50%);
 
             /* Transição suave */
             opacity: 0;
             transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
-            pointer-events: none;
+            pointer-events: auto;
+            /* Permite interagir se houver links/textos dentro */
         }
 
-        /* Seta na parte inferior do Popup */
+        /* Seta na parte inferior */
         .info-tooltip .tooltip-text::after {
             content: "";
             position: absolute;
@@ -563,60 +575,9 @@
             border-color: #0f172a transparent transparent transparent;
         }
 
-        /* Exibir ao passar o mouse ou focar */
-        .info-tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(-2px);
-        }
-
-        .info-tooltip {
-            position: relative;
-            display: inline-block;
-            margin-left: 4px;
-            cursor: pointer;
-            color: var(--accent);
-        }
-
-        .info-tooltip:hover i {
-            color: #fff;
-        }
-
-        .info-tooltip .tooltip-text {
-            visibility: hidden;
-            width: 220px;
-            background-color: #0f172a;
-            color: var(--text);
-            text-align: left;
-            border-radius: 8px;
-            padding: 8px 12px;
-            border: 1px solid var(--card-border);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            font-size: 0.75rem;
-            font-weight: normal;
-            line-height: 1.3;
-            position: absolute;
-            z-index: 20;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-            pointer-events: none;
-        }
-
-        .info-tooltip .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #0f172a transparent transparent transparent;
-        }
-
-        .info-tooltip:hover .tooltip-text {
+        /* Exibir no Hover (Desktop) OU com a classe .active (Mobile via JS) */
+        .info-tooltip:hover .tooltip-text,
+        .info-tooltip.active .tooltip-text {
             visibility: visible;
             opacity: 1;
             transform: translateX(-50%) translateY(-2px);
