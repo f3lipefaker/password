@@ -1,4 +1,4 @@
-image="template" 
+image="password" 
 namespace="viptech"
 
 echo "Removendo imagens anteriores..."

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/svg+xml" id="companyIcon" href="https://appares.viptech.com.br/icons/ares-fk.png" />
+    <title>Portal Cadastro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="meta-bar">
+            <div class="device-badge">
+                <i id="device-icon" class="fa-solid fa-desktop"></i>
+                <span id="disp-device">Detectando...</span>
+            </div>
+            <button id="adminBtn" class="btn-admin" onclick="switchTab('admin')"><i class="fa-solid fa-lock"></i>
+                Registros</button>
+        </div>
+
+        <!-- Navegação -->
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-tab-form" onclick="switchTab('form')">
+                <i class="fa-solid fa-pen-to-square"></i> Formulário
+            </button>
+            <button class="tab-btn" id="btn-tab-chat" onclick="switchTab('chat')">
+                <i class="fa-solid fa-robot"></i> Modo Chat
+            </button>
+            <button class="tab-btn" id="btn-tab-admin" style="display:none;" onclick="switchTab('admin')">
+                <i class="fa-solid fa-shield-halved"></i> Registros
+            </button>
+        </div>
+
+        <!-- ABA 1: FORMULÁRIO -->
+        <div id="tab-form" class="view active">
+            <form id="traditionalForm">
+                <div class="form-group">
+                    <label>Cliente / Conta</label>
+                    <div class="input-wrapper" id="client-input-wrapper">
+                        <i class="fa-solid fa-building"></i>
+                        <input type="text" id="f_search_client" placeholder="Busque por nome ou código..."
+                            oninput="handleClientSearch(this.value)" autocomplete="off" />
+                    </div>
+                    <div id="form-search-results" class="search-results"></div>
+                    <div id="client-locked-hint"><i class="fa-solid fa-lock"></i> Cliente definido</div>
+                    <input type="hidden" id="f_cliente_selected" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="f_name" placeholder="Digite seu nome" required />
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>E-mail *</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-envelope"></i>
+                            <input type="email" id="f_email" placeholder="email@exemplo.com" required
+                                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                title="Insira um e-mail válido (exemplo: usuario@dominio.com)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone *</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-phone"></i>
+                            <input type="tel" id="f_phone" placeholder="(00) 00000-0000" maxlength="15"
+                                inputmode="numeric" oninput="this.value = formatarTelefone(this.value)" required/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>CPF</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-id-card"></i>
+                            <input type="text" id="f_cpf" placeholder="000.000.000-00" maxlength="14"
+                                inputmode="numeric" oninput="this.value = formatarCPF(this.value)" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>RG</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-id-card-clip"></i>
+                            <input type="text" id="f_rg" placeholder="00.000.000-0" maxlength="12"
+                                oninput="this.value = formatarRG(this.value)" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Função / Cargo</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-briefcase"></i>
+                        <input type="text" id="f_function" placeholder="Ex: Operador" />
+                    </div>
+                </div>
+
+                <div class="toggle-card" onclick="document.getElementById('f_app').click()">
+                    <span style="font-size:0.8rem; font-weight: 500;"><i class="fa-solid fa-mobile-screen-button"
+                            style="margin-right:8px; color:var(--accent);"></i> Possui Aplicação Mobile (App)?</span>
+                    <input type="checkbox" id="f_app" onchange="toggleAppInput(this.checked)"
+                        onclick="event.stopPropagation()" />
+                </div>
+
+                <div id="app-download-container" style="display: none;"></div>
+
+                <div class="grid-2">
+                    <!-- Senha da Aplicação -->
+                    <div class="form-group">
+                        <label>
+                            Senha da Aplicação
+                            <span class="info-tooltip"> <i class="fa-solid fa-circle-question"></i>
+                                <span class="tooltip-text">
+                                    <strong>O que é a Senha da Aplicação?</strong><br>
+                                    É a senha de acesso que você utilizará para fazer login no aplicativo móvel
+                                    (Viptech).
+                                </span>
+                            </span>
+                        </label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-key"></i>
+                            <input type="password" id="f_pass_app" placeholder="••••••••" disabled />
+                        </div>
+                    </div>
+
+                    <!-- Senha Alarme -->
+                    <div class="form-group">
+                        <label>
+                            Senha Alarme (4 dígitos) *
+                            <span class="info-tooltip">
+                                <i class="fa-solid fa-circle-question"></i>
+                                <span class="tooltip-text">
+                                    <strong>O que é a Senha do Alarme?</strong><br>
+                                    É a senha numéricas digitada no teclado físico do alarme para armar ou desarmar o
+                                    sistema no local.
+                                </span>
+                            </span>
+                        </label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-shield-cat"></i>
+                            <input type="password" id="f_pass_alr" placeholder="••••" maxlength="4" inputmode="numeric"
+                                pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        Senha Verbal (Contrasenha) *
+                        <span class="info-tooltip">
+                            <i class="fa-solid fa-circle-question"></i>
+                            <span class="tooltip-text">
+                                <strong>O que é a Senha Verbal?</strong><br>
+                                É uma palavra-chave secreta usada para confirmar sua identidade via telefone ou rádio
+                                com a central de monitoramento em situações de emergência ou teste.
+                            </span>
+                        </span>
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <input type="text" id="f_pass_verbal" placeholder="Palavra-chave" required/>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit"><i class="fa-solid fa-paper-plane"></i> Finalizar
+                    Cadastro</button>
+            </form>
+
+            <!-- Tela de Sucesso/Feedback -->
+            <div id="success-screen" class="success-screen">
+                <i class="fa-solid fa-circle-check success-icon"></i>
+                <h2>Cadastro Realizado!</h2>
+                <p style="color: var(--text-muted); margin-top: 8px; font-size: 0.85rem;">
+                    Seus dados foram gravados com sucesso no sistema.
+                </p>
+                <button class="btn-reload" onclick="location.reload()">
+                    <i class="fa-solid fa-rotate-right"></i> Novo Cadastro
+                </button>
+            </div>
+        </div>
+
+        <!-- ABA 2: CHAT INTERATIVO -->
+        <div id="tab-chat" class="view">
+            <div class="chat-history" id="chatHistory"></div>
+            <div class="chat-input-area" id="chatInputGroup">
+                <input type="text" id="chatInput" placeholder="Responda aqui..."
+                    onkeydown="if(event.key==='Enter') sendChatAnswer()" />
+                <button onclick="sendChatAnswer()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- ABA 3: REGISTROS COMPLETOS (ADM) -->
+        <div id="tab-admin" class="view">
+            <h3 style="color:var(--accent); font-size: 0.95rem;"><i class="fa-solid fa-database"></i> Tabela de
+                Registros Cadastrados</h3>
+            <p style="color:var(--text-muted); font-size: 0.72rem; margin-bottom: 8px;">Consulte os dados enviados para
+                cadastro nos sistemas internos.</p>
+
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Telefone</th>
+                            <th>CPF</th>
+                            <th>RG</th>
+                            <th>Cargo</th>
+                            <th>App?</th>
+                            <th>Senha App</th>
+                            <th>Senha Alarme</th>
+                            <th>Senha Verbal</th>
+                            <th>Dispositivo Informado</th>
+                            <th>Cadastrado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                        <tr>
+                            <td colspan="13">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+
+</html>
