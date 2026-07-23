@@ -7,6 +7,19 @@ import axios from 'axios';
 const router = Router();
 
 //GET 
+// Rota para checar se a origem é local (192.168.44.*)
+router.get('/check-ip', (req, res) => {
+    // Pega o IP do cliente (considerando proxies/headers)
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+
+    console.log("Acesso: ", clientIp);
+
+    // Verifica se o IP pertence à sub-rede 192.168.44.X
+    const isAllowed = clientIp.includes('192.168.44.') || '192.168.34.'
+
+    return res.status(200).json({ isAllowed, ip: clientIp });
+});
+
 // Rota para buscar clientes/contas na Segware
 router.get('/search-client', async (req, res) => {
     try {
@@ -64,19 +77,6 @@ router.post('/register', async (req, res) => {
         console.error('Erro detectado: ', error, 'Rota: ', req.url);
         return res.status(400).json({ error: 'Erro ao processar a solicitação' });
     }
-});
-
-// Rota para checar se a origem é local (192.168.44.*)
-router.get('/check-ip', (req, res) => {
-    // Pega o IP do cliente (considerando proxies/headers)
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-
-    console.log("Acesso: ", clientIp);
-
-    // Verifica se o IP pertence à sub-rede 192.168.44.X
-    const isAllowed = clientIp.includes('192.168.44.') || '192.168.34.'
-
-    return res.status(200).json({ isAllowed, ip: clientIp });
 });
 
 // Rota de listagem de todos os cadastros (Painel ADM)

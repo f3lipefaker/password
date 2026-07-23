@@ -67,7 +67,7 @@ app.use((req, res, next) => {
 import auth from './src/routes/auth/index.js';
 
 // Aplica o limiter mais estrito especificamente na rota de Auth
-app.use('/api/v1/auth', authLimiter, auth); 
+app.use('/api/v1', authLimiter, auth); 
 // Nota: Se suas rotas forem dentro de '/api/v1', ajuste o prefixo conforme necessário.
 
 // ==========================================
