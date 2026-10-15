@@ -6,20 +6,35 @@ import axios from 'axios';
 
 const router = Router();
 
-//GET 
-// Rota para checar se a origem é local (192.168.44.*)
-router.get('/check-ip', (req, res) => {
-    // Pega o IP do cliente (considerando proxies/headers)
-    let clientIp = req.headers['x-forwarded-for']
+async function checktoken(email, password) {
+    const data = { type: "WEB", email, password };
 
-    console.log("Acesso: ", clientIp);
-
-    if (!clientIp) {
-        clientIp = req.socket.remoteAddress
+    try {
+        const response = await axios.post('https://cloud.segware.com.br/server/v3/auth', data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`[Segware Auth] Error: ${error.message}`);
+        throw error;
     }
+}
 
-    // Verifica se o IP pertence à sub-rede 192.168.44.X
-    const isAllowed = clientIp.includes('192.168.44.')
+// Rota para checar se a origem é local (192.168.44.* ou localhost/IPv6)
+router.get('/check-ip', (req, res) => {
+    // Pega o IP considerando o proxy (X-Forwarded-For) ou a conexão direta (remoteAddress)
+    let clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    console.log("Acesso IP:", clientIp);
+
+    // Se estiver rodando localmente (IPv6 ::1 ou loopback IPv4 127.0.0.1), 
+    // você pode decidir se quer permitir para testes locais:
+    const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp.includes('::ffff:127.0.0.1');
+
+    // Verifica se o IP pertence à sub-rede 192.168.44.X ou se é local
+    const isAllowed = isLocalhost || clientIp.includes('192.168.44.')  || clientIp.includes('192.168.34.')  || clientIp.includes('192.168.33.') || clientIp.includes('192.168.22.');
 
     return res.status(200).json({ isAllowed, ip: clientIp });
 });
@@ -30,12 +45,24 @@ router.get('/search-client', async (req, res) => {
         const { q } = req.query;
         if (!q) return res.status(400).json({ error: 'Termo de busca não informado' });
 
+        const integrationResult = await sql.SELECT(tables.cad_integration.schema, {
+            [tables.cad_integration.columns.enabled]: true,
+            [tables.cad_integration.columns.type]: 'sigma_cloud',
+        }).catch(error => console.error(`[Cron Integration Query] Error: ${error.message}`));
+
+        if (!integrationResult || integrationResult.length === 0) {
+            return res.status(404).json({ error: 'Configuração de integração Segware não encontrada.' });
+        }
+
+        const newToken = await checktoken(integrationResult[0].email, integrationResult[0].password);
+
         const config = {
             method: 'get',
             maxBodyLength: Infinity,
             url: `https://cloud.segware.com.br/server/api/v2/2231/search?q=${encodeURIComponent(q)}`,
             headers: {
-                'Authorization': `Bearer ${process.env.SEGWARE_TOKEN}`,
+                'content-type': 'application/json;charset=UTF-8',
+                'Authorization': `Bearer ${newToken}`,
             }
         };
 
@@ -58,7 +85,6 @@ router.post('/register', async (req, res) => {
         } = req.body;
 
         console.log(req.body);
-
 
         await sql.INSERT(tables.cad_passwords.schema, {
             [tables.cad_passwords.columns.cliente]: cliente,
@@ -97,48 +123,16 @@ router.get('/admin/passwords', async (req, res) => {
 //PUT
 router.patch('/admin/passwords/:id/status', async (req, res) => {
     const { id } = req.params;
-    const { vist } = req.body; // Espera um valor booleano (true ou false)
+    const { vist } = req.body;
 
     try {
-        // Exemplo com query SQL tradicional:
         await pool.query(`UPDATE ${tables.cad_passwords.schema} SET vist = ${vist} WHERE id = ${id}`);
 
         return res.status(200).json({ message: 'Status atualizado com sucesso!' });
-
-        // Request URL
-        // https://cloud.segware.com.br/server/api/v2/2231/accounts/1381834/usersAndContact
-        // {
-        //     "email": "felipe@viptech.com.br",
-        //     "nextel": "senha4",
-        //     "allPartitions": true,
-        //     "phone01": "44991142300",
-        //     "taxpayerIdentification": "00000",
-        //     "identificationNumber": "rg",
-        //     "receivesIvrCall": false,
-        //     "receivesIvrWhatsappNotification": false,
-        //     "whatsappPhone01": false,
-        //     "countryCodePhone01": 55,
-        //     "whatsappPhone02": false,
-        //     "countryCodePhone02": 55,
-        //     "list": 0,
-        //     "questionPassword": "",
-        //     "answerPassword": "senhav",
-        //     "showUserAsContact": true,
-        //     "countrySiglaPhone01": "BR",
-        //     "countrySiglaPhone02": "BR",
-        //     "contactReason": [],
-        //     "partitionPanelCode": [],
-        //     "name": "Felipe Borges",
-        //     "priority": 0,
-        //     "id": 15592843,
-        //     "phone02": "44991142300"
-        // }
-
     } catch (error) {
         console.error('Erro no banco de dados:', error);
         return res.status(500).json({ error: 'Erro ao atualizar o registro no banco.' });
     }
 });
-
 
 export default router;

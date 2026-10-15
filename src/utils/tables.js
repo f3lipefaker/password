@@ -18,6 +18,18 @@ const tables = {
             pass_verbal: 'pass_verbal'
         },
     },
+
+    cad_integration: {
+        schema: "cad_integration",
+        columns: {
+            id: "id",
+            type: "type",
+            enabled: "enabled",
+            token: "token",
+            email: "email",
+            password: "password",
+        },
+    },
 };
 
 export default tables;

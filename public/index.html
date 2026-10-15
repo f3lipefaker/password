@@ -3,212 +3,173 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#005ab1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0e1620" media="(prefers-color-scheme: dark)">
 
-    <!-- DEFINE A COR DAS BARRAS DO NAVEGADOR EM DISPOSITIVOS MÓVEIS -->
-    <meta name="theme-color" content="#0d1117" /> <!-- Coloque o mesmo código de cor do seu CSS -->
-
-    <link rel="icon" type="image/svg+xml" id="companyIcon" href="https://appares.viptech.com.br/icons/ares-fk.png" />
-    <title>Portal Cadastro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="icon" type="image/png" id="companyIcon"
+        href="https://viptech.com.br/wp-content/uploads/2026/10/cropped-Icone-Viptech-192x192.avif" />
+    <title>Portal de Cadastro</title>
+    <!-- Fontes do Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="container">
-        <!-- Top Bar -->
-        <div class="meta-bar">
-            <div class="device-badge">
-                <i id="device-icon" class="fa-solid fa-desktop"></i>
-                <span id="disp-device">Detectando...</span>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <h1>Portal de Cadastro</h1>
+                <p>Credenciais de acesso e segurança</p>
             </div>
-            <button id="adminBtn" class="btn-admin" onclick="switchTab('admin')"><i class="fa-solid fa-lock"></i>
-                Registros</button>
+            <div class="topbar-meta">
+                <span class="device">Dispositivo: <strong id="disp-device">Detectando...</strong></span>
+                <button type="button" id="adminBtn" class="btn-admin" onclick="switchTab('admin')">Registros</button>
+            </div>
         </div>
+    </header>
 
-        <!-- Navegação -->
-        <div class="tabs">
-            <button class="tab-btn active" id="btn-tab-form" onclick="switchTab('form')">
-                <i class="fa-solid fa-pen-to-square"></i> Formulário
-            </button>
-            <button class="tab-btn" id="btn-tab-chat" onclick="switchTab('chat')">
-                <i class="fa-solid fa-robot"></i> Modo Chat
-            </button>
-            <button class="tab-btn" id="btn-tab-admin" style="display:none;" onclick="switchTab('admin')">
-                <i class="fa-solid fa-shield-halved"></i> Registros
-            </button>
-        </div>
+    <main class="page">
+        <nav class="tabs" role="tablist">
+            <button type="button" class="tab-btn active" id="btn-tab-form"
+                onclick="switchTab('form')">Formulário</button>
+            <button type="button" class="tab-btn" id="btn-tab-chat" onclick="switchTab('chat')">Modo chat</button>
+            <button type="button" class="tab-btn" id="btn-tab-admin" style="display:none;"
+                onclick="switchTab('admin')">Registros</button>
+        </nav>
 
-        <!-- ABA 1: FORMULÁRIO -->
+        <!-- Formulário -->
         <div id="tab-form" class="view active">
             <form id="traditionalForm">
-                <div class="form-group">
-                    <label>Cliente / Conta</label>
-                    <div class="input-wrapper" id="client-input-wrapper">
-                        <i class="fa-solid fa-building"></i>
-                        <input type="text" id="f_search_client" placeholder="Busque por nome ou código..."
-                            oninput="handleClientSearch(this.value)" autocomplete="off" />
-                    </div>
-                    <div id="form-search-results" class="search-results"></div>
-                    <div id="client-locked-hint"><i class="fa-solid fa-lock"></i> Cliente definido</div>
-                    <input type="hidden" id="f_cliente_selected" required />
-                </div>
 
-                <div class="form-group">
-                    <label>Nome Completo</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-user"></i>
-                        <input type="text" id="f_name" placeholder="Digite seu nome" required />
-                    </div>
-                </div>
+                <section class="panel">
+                    <h2>Identificação</h2>
 
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>E-mail *</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="f_email" placeholder="email@exemplo.com" required
-                                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                                title="Insira um e-mail válido (exemplo: usuario@dominio.com)" />
+                    <div class="field">
+                        <label for="f_search_client">Cliente ou conta *</label>
+                        <div class="input-wrapper" id="client-input-wrapper">
+                            <input type="text" id="f_search_client" placeholder="Busque por nome ou código"
+                                oninput="handleClientSearch(this.value)" autocomplete="off" />
+                            <div id="form-search-results" class="search-results"></div>
                         </div>
+                        <p id="client-locked-hint" class="hint">Cliente definido pelo link de acesso.</p>
+                        <input type="hidden" id="f_cliente_selected" />
                     </div>
-                    <div class="form-group">
-                        <label>Telefone *</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-phone"></i>
-                            <input type="tel" id="f_phone" placeholder="(00) 00000-0000" maxlength="15"
-                                inputmode="numeric" oninput="this.value = formatarTelefone(this.value)" required />
-                        </div>
-                    </div>
-                </div>
 
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label>CPF</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-id-card"></i>
+                    <div class="field">
+                        <label for="f_name">Nome completo *</label>
+                        <input type="text" id="f_name" autocomplete="name" required />
+                    </div>
+
+                    <div class="grid-3">
+                        <div class="field">
+                            <label for="f_function">Função ou cargo</label>
+                            <input type="text" id="f_function" placeholder="Ex.: Operador" />
+                        </div>
+                        <div class="field">
+                            <label for="f_cpf">CPF</label>
                             <input type="text" id="f_cpf" placeholder="000.000.000-00" maxlength="14"
                                 inputmode="numeric" oninput="this.value = formatarCPF(this.value)" />
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>RG</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-id-card-clip"></i>
+                        <div class="field">
+                            <label for="f_rg">RG</label>
                             <input type="text" id="f_rg" placeholder="00.000.000-0" maxlength="12"
                                 oninput="this.value = formatarRG(this.value)" />
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div class="form-group">
-                    <label>Função / Cargo</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-briefcase"></i>
-                        <input type="text" id="f_function" placeholder="Ex: Operador" />
-                    </div>
-                </div>
-
-                <div class="toggle-card" onclick="document.getElementById('f_app').click()">
-                    <span style="font-size:0.8rem; font-weight: 500;"><i class="fa-solid fa-mobile-screen-button"
-                            style="margin-right:8px; color:var(--accent);"></i> Possui Aplicação Mobile (App)?</span>
-                    <input type="checkbox" id="f_app" onchange="toggleAppInput(this.checked)"
-                        onclick="event.stopPropagation()" />
-                </div>
-
-                <div id="app-download-container" style="display: none;"></div>
-
-                <div class="grid-2">
-                    <!-- Senha da Aplicação -->
-                    <div class="form-group">
-                        <label>
-                            Senha da Aplicação
-                            <span class="info-tooltip"> <i class="fa-solid fa-circle-question"></i>
-                                <span class="tooltip-text">
-                                    <strong>O que é a Senha da Aplicação?</strong><br>
-                                    É a senha de acesso que você utilizará para fazer login no aplicativo móvel
-                                    (Viptech).
-                                </span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-key"></i>
-                            <input type="password" id="f_pass_app" placeholder="••••••••" disabled />
+                <section class="panel">
+                    <h2>Contato</h2>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="f_email">E-mail *</label>
+                            <input type="email" id="f_email" placeholder="usuario@dominio.com" autocomplete="email"
+                                required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                title="Insira um e-mail válido (exemplo: usuario@dominio.com)" />
+                        </div>
+                        <div class="field">
+                            <label for="f_phone">Telefone *</label>
+                            <input type="tel" id="f_phone" placeholder="(00) 00000-0000" maxlength="15"
+                                inputmode="numeric" autocomplete="tel"
+                                oninput="this.value = formatarTelefone(this.value)" required />
                         </div>
                     </div>
+                </section>
 
-                    <!-- Senha Alarme -->
-                    <div class="form-group">
-                        <label>
-                            Senha (4 dígitos)
-                            <span class="info-tooltip">
-                                <i class="fa-solid fa-circle-question"></i>
-                                <span class="tooltip-text">
-                                    <strong>O que é a Senha do Alarme?</strong><br>
-                                    É a senha numéricas digitada no teclado físico do alarme para armar ou desarmar o
-                                    sistema no local.
-                                </span>
-                            </span>
-                        </label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-shield-cat"></i>
-                            <input type="password" id="f_pass_alr" placeholder="••••" maxlength="4" inputmode="numeric"
-                                pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
-                        </div>
-                    </div>
-                </div>
+                <section class="panel">
+                    <h2>Senhas de acesso</h2>
 
-                <div class="form-group">
-                    <label>
-                        Senha Verbal (Contrasenha) *
-                        <span class="info-tooltip">
-                            <i class="fa-solid fa-circle-question"></i>
-                            <span class="tooltip-text">
-                                <strong>O que é a Senha Verbal?</strong><br>
-                                É uma palavra-chave secreta usada para confirmar sua identidade via telefone ou rádio
-                                com a central de monitoramento em situações de emergência ou teste.
-                            </span>
-                        </span>
+                    <label class="check" for="f_app">
+                        <input type="checkbox" id="f_app" onchange="toggleAppInput(this.checked)" />
+                        <span>Utilizará o aplicativo Viptech</span>
                     </label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-comment-dots"></i>
-                        <input type="text" id="f_pass_verbal" placeholder="Palavra-chave" required />
-                    </div>
-                </div>
 
-                <button type="submit" class="btn-submit"><i class="fa-solid fa-paper-plane"></i> Finalizar
-                    Cadastro</button>
+                    <div id="app-download-container" style="display: none;"></div>
+
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="f_pass_app">Senha do aplicativo</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="f_pass_app" class="has-toggle" disabled />
+                                <button type="button" class="toggle-pass"
+                                    onclick="togglePass('f_pass_app', this)">Mostrar</button>
+                            </div>
+                            <p class="hint">Usada para entrar no aplicativo Viptech.</p>
+                        </div>
+
+                        <div class="field">
+                            <label for="f_pass_alr">Senha do alarme (4 dígitos) *</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="f_pass_alr" class="has-toggle" maxlength="4"
+                                    inputmode="numeric" pattern="[0-9]{4}" title="Informe exatamente 4 dígitos"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')" required />
+                                <button type="button" class="toggle-pass"
+                                    onclick="togglePass('f_pass_alr', this)">Mostrar</button>
+                            </div>
+                            <p class="hint">Digitada no teclado do alarme para armar e desarmar o sistema.</p>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="f_pass_verbal">Senha verbal (contrassenha) *</label>
+                        <input type="text" id="f_pass_verbal" autocomplete="off" required />
+                        <p class="hint">Palavra-chave para confirmar sua identidade com a central de monitoramento por
+                            telefone ou rádio.</p>
+                    </div>
+                </section>
+
+                <div class="actions">
+                    <button type="submit" class="btn-submit">Enviar cadastro</button>
+                    <p class="form-footer">Os dados são transmitidos por conexão segura.</p>
+                </div>
             </form>
 
-            <!-- Tela de Sucesso/Feedback -->
             <div id="success-screen" class="success-screen">
-                <i class="fa-solid fa-circle-check success-icon"></i>
-                <h2>Cadastro Realizado!</h2>
-                <p style="color: var(--text-muted); margin-top: 8px; font-size: 0.85rem;">
-                    Seus dados foram gravados com sucesso no sistema.
-                </p>
-                <button class="btn-reload" onclick="location.reload()">
-                    <i class="fa-solid fa-rotate-right"></i> Novo Cadastro
-                </button>
+                <h2>Cadastro enviado</h2>
+                <p>Os dados foram gravados no sistema.</p>
+                <button type="button" class="btn-secondary" onclick="location.reload()">Novo cadastro</button>
             </div>
         </div>
 
-        <!-- ABA 2: CHAT INTERATIVO -->
+        <!-- Chat -->
         <div id="tab-chat" class="view">
             <div class="chat-history" id="chatHistory"></div>
             <div class="chat-input-area" id="chatInputGroup">
-                <input type="text" id="chatInput" placeholder="Responda aqui..."
+                <input type="text" id="chatInput" placeholder="Digite a resposta"
                     onkeydown="if(event.key==='Enter') sendChatAnswer()" />
-                <button onclick="sendChatAnswer()"><i class="fa-solid fa-paper-plane"></i></button>
+                <button type="button" onclick="sendChatAnswer()">Enviar</button>
             </div>
         </div>
 
-        <!-- ABA 3: REGISTROS COMPLETOS (ADM) -->
+        <!-- Registros -->
         <div id="tab-admin" class="view">
-            <h3 style="color:var(--accent); font-size: 0.95rem;"><i class="fa-solid fa-database"></i> Tabela de
-                Registros Cadastrados</h3>
-            <p style="color:var(--text-muted); font-size: 0.72rem; margin-bottom: 8px;">Consulte os dados enviados para
-                cadastro nos sistemas internos.</p>
+            <div class="admin-head">
+                <h2>Registros cadastrados</h2>
+                <p>Dados enviados para cadastro nos sistemas internos.</p>
+            </div>
 
             <div class="table-container">
                 <table class="admin-table">
@@ -222,23 +183,23 @@
                             <th>CPF</th>
                             <th>RG</th>
                             <th>Cargo</th>
-                            <th>App?</th>
-                            <th>Senha App</th>
-                            <th>Senha Alarme</th>
-                            <th>Senha Verbal</th>
-                            <th>Dispositivo Informado</th>
-                            <th>Cadastrado</th>
+                            <th>App</th>
+                            <th>Senha app</th>
+                            <th>Senha alarme</th>
+                            <th>Senha verbal</th>
+                            <th>Dispositivo</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="adminTableBody">
                         <tr>
-                            <td colspan="13">Carregando dados...</td>
+                            <td colspan="14" class="empty-row">Carregando registros...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
+    </main>
 
     <script src="./script.js"></script>
 </body>

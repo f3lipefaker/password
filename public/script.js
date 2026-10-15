@@ -5,6 +5,15 @@ const APP_URLS = {
     ios: 'https://apps.apple.com/br/app/viptech/id1304456087'
 };
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function getDeviceFingerprint() {
     const ua = navigator.userAgent || '';
     let type = 'Desktop (' + (navigator.platform || 'PC') + ')';
@@ -29,14 +38,9 @@ function getDeviceFingerprint() {
 
 const deviceMeta = getDeviceFingerprint();
 document.getElementById('disp-device').innerText = deviceMeta.type;
-document.getElementById('device-icon').className =
-    deviceMeta.os === 'android' ? 'fa-brands fa-android' :
-        deviceMeta.os === 'ios' ? 'fa-brands fa-apple' : 'fa-solid fa-desktop';
 
 // --- Cliente via parâmetro de URL ---
 // Uso: seusite.com/?cliente=NomeOuCodigoDoCliente
-// Se o parâmetro vier preenchido, o campo Cliente/Conta é travado (não editável)
-// tanto no Formulário quanto no Modo Chat.
 const urlParams = new URLSearchParams(window.location.search);
 const clienteParam = urlParams.get('cliente');
 const clienteLocked = !!clienteParam;
@@ -61,6 +65,15 @@ function applyClientLock() {
 }
 applyClientLock();
 
+// Mostrar / ocultar senha
+function togglePass(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input || input.disabled) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Ocultar' : 'Mostrar';
+}
+
 function toggleAppInput(enabled) {
     const passInput = document.getElementById('f_pass_app');
     const downloadContainer = document.getElementById('app-download-container');
@@ -71,15 +84,18 @@ function toggleAppInput(enabled) {
         if (deviceMeta.os === 'android' || deviceMeta.os === 'ios') {
             const url = APP_URLS[deviceMeta.os];
             downloadContainer.innerHTML = `
-                        <div class="app-download-box">
-                            <span style="font-size:0.78rem;"><i class="fa-solid fa-circle-down" style="color:var(--accent);"></i> App para ${deviceMeta.type}</span>
-                            <a href="${url}" target="_blank" rel="noopener noreferrer">Baixar App</a>
-                        </div>`;
+                <div class="app-download-box">
+                    <span>Aplicativo disponível para ${escapeHtml(deviceMeta.type)}</span>
+                    <a href="${url}" target="_blank" rel="noopener noreferrer">Baixar aplicativo</a>
+                </div>`;
             downloadContainer.style.display = 'block';
         }
     } else {
         passInput.required = false;
         passInput.value = '';
+        passInput.type = 'password';
+        const toggleBtn = passInput.parentElement.querySelector('.toggle-pass');
+        if (toggleBtn) toggleBtn.textContent = 'Mostrar';
         downloadContainer.style.display = 'none';
     }
 }
@@ -89,8 +105,8 @@ async function checkIpOrigin() {
         const res = await fetch(`${API_BASE}/check-ip`);
         const data = await res.json();
         if (data.isAllowed) {
-            document.getElementById('adminBtn').style.display = 'block';
-            document.getElementById('btn-tab-admin').style.display = 'flex';
+            document.getElementById('adminBtn').style.display = 'inline-block';
+            document.getElementById('btn-tab-admin').style.display = 'block';
         }
     } catch (e) { console.error('Erro na validação de acesso IP:', e); }
 }
@@ -98,10 +114,12 @@ checkIpOrigin();
 
 let searchTimer = null;
 async function handleClientSearch(query) {
-    if (clienteLocked) return; // Busca desativada quando o cliente vem travado por parâmetro
+    if (clienteLocked) return;
 
     clearTimeout(searchTimer);
     const resultsBox = document.getElementById('form-search-results');
+    // Se o usuário editar o texto, a seleção anterior deixa de valer
+    document.getElementById('f_cliente_selected').value = '';
     if (query.length < 3) { resultsBox.style.display = 'none'; return; }
 
     searchTimer = setTimeout(async () => {
@@ -116,7 +134,7 @@ async function handleClientSearch(query) {
             } else {
                 list.forEach(item => {
                     const name = item.tradeName || item.companyName;
-                    const code = item.accountCode ? ` (Cod: ${item.accountCode})` : '';
+                    const code = item.accountCode ? ` (Cód.: ${item.accountCode})` : '';
                     const div = document.createElement('div');
                     div.className = 'search-item';
                     div.innerText = `${name}${code}`;
@@ -132,6 +150,13 @@ async function handleClientSearch(query) {
         } catch (e) { console.error('Erro na busca:', e); }
     }, 400);
 }
+
+document.addEventListener('click', (e) => {
+    const resultsBox = document.getElementById('form-search-results');
+    if (resultsBox && !e.target.closest('#client-input-wrapper')) {
+        resultsBox.style.display = 'none';
+    }
+});
 
 let chatStarted = false;
 
@@ -155,57 +180,63 @@ function switchTab(type) {
 
 async function loadAdminData() {
     const tbody = document.getElementById('adminTableBody');
-    tbody.innerHTML = '<tr><td colspan="13">Carregando dados...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="empty-row">Carregando registros...</td></tr>';
     try {
         const res = await fetch(`${API_BASE}/admin/passwords`);
         const data = await res.json();
         tbody.innerHTML = '';
 
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="13">Nenhum registro cadastrado até o momento.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="empty-row">Nenhum registro cadastrado até o momento.</td></tr>';
             return;
         }
-
-        // Substitua o loop 'data.forEach(row => { ... })' dentro do loadAdminData por este:
 
         data.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-        <td><strong>#${row.id}</strong></td>
-        <td>${row.cliente || '-'}</td>
-        <td>${row.name || '-'}</td>
-        <td>${row.email || '-'}</td>
-        <td>${row.phone || '-'}</td>
-        <td>${row.cpf || '-'}</td>
-        <td>${row.rg || '-'}</td>
-        <td>${row.function || '-'}</td>
-        <td><span class="badge-app ${row.app ? 'yes' : 'no'}">${row.app ? 'SIM' : 'NÃO'}</span></td>
-        <td><code>${row.pass_app || '-'}</code></td>
-        <td><code>${row.pass_alr || '-'}</code></td>
-        <td><code>${row.pass_verbal || '-'}</code></td>
-        <td><small>${row.device || '-'}</small></td>
-        <td>
-            <button 
-                class="btn-status-toggle ${row.vist ? 'status-sim' : 'status-nao'}" 
-                onclick="toggleVistStatus(${row.id}, ${row.vist})">
-                ${row.vist ? 'VALIDADO' : 'PENDENTE'}
-            </button>
-        </td>
-    `;
+                <td><strong>${escapeHtml(row.id)}</strong></td>
+                <td>${escapeHtml(row.cliente) || '-'}</td>
+                <td>${escapeHtml(row.name) || '-'}</td>
+                <td>${escapeHtml(row.email) || '-'}</td>
+                <td>${escapeHtml(row.phone) || '-'}</td>
+                <td>${escapeHtml(row.cpf) || '-'}</td>
+                <td>${escapeHtml(row.rg) || '-'}</td>
+                <td>${escapeHtml(row.function) || '-'}</td>
+                <td><span class="badge-app ${row.app ? 'yes' : 'no'}">${row.app ? 'Sim' : 'Não'}</span></td>
+                <td><code>${escapeHtml(row.pass_app) || '-'}</code></td>
+                <td><code>${escapeHtml(row.pass_alr) || '-'}</code></td>
+                <td><code>${escapeHtml(row.pass_verbal) || '-'}</code></td>
+                <td>${escapeHtml(row.device) || '-'}</td>
+                <td>
+                    <button type="button" class="btn-status-toggle ${row.vist ? 'status-sim' : 'status-nao'}"
+                        onclick="toggleVistStatus(${Number(row.id)}, ${row.vist ? 'true' : 'false'})">
+                        ${row.vist ? 'Validado' : 'Pendente'}
+                    </button>
+                </td>`;
             tbody.appendChild(tr);
         });
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="13">Erro ao carregar registros.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="14" class="empty-row">Não foi possível carregar os registros.</td></tr>';
     }
 }
 
 document.getElementById('traditionalForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const clienteValue = document.getElementById('f_cliente_selected').value || document.getElementById('f_search_client').value;
+    if (!clienteValue.trim()) {
+        alert('Informe o cliente ou a conta.');
+        document.getElementById('f_search_client').focus();
+        return;
+    }
+
+    const submitBtn = e.target.querySelector('.btn-submit');
+    submitBtn.disabled = true;
+
     const payload = {
         device: deviceMeta.type,
         device_meta: deviceMeta,
-        cliente: document.getElementById('f_cliente_selected').value || document.getElementById('f_search_client').value,
+        cliente: clienteValue,
         name: document.getElementById('f_name').value,
         email: document.getElementById('f_email').value,
         phone: document.getElementById('f_phone').value,
@@ -218,46 +249,48 @@ document.getElementById('traditionalForm').addEventListener('submit', async (e) 
         pass_verbal: document.getElementById('f_pass_verbal').value,
     };
 
-    await sendPayload(payload, 'form');
+    const ok = await sendPayload(payload, 'form');
+    if (!ok) submitBtn.disabled = false;
 });
 
 const chatSteps = [
-    { key: 'cliente', label: 'Qual o nome ou código do cliente/conta?' },
-    { key: 'name', label: 'Qual é o seu nome completo?' },
-    { key: 'email', label: 'Informe seu e-mail:' },
-    { key: 'phone', label: 'Seu telefone:' },
-    { key: 'cpf', label: 'Seu CPF (ou "pular"):' },
-    { key: 'rg', label: 'Seu RG (ou "pular"):' },
-    { key: 'function', label: 'Sua Função/Cargo:' },
-    { key: 'app', label: 'Você deseja utilizar o Aplicativo Viptech? (Responda "sim" ou "nao")' },
-    { key: 'pass_app', label: 'Qual a Senha para acesso ao App?' },
-    { key: 'pass_alr', label: 'Senha do Alarme: São 4 dígitos' },
-    { key: 'pass_verbal', label: 'Senha Verbal / Contra-Senha:' }
+    { key: 'cliente', label: 'Informe o nome ou código do cliente/conta.' },
+    { key: 'name', label: 'Informe seu nome completo.' },
+    { key: 'email', label: 'Informe seu e-mail.' },
+    { key: 'phone', label: 'Informe seu telefone.' },
+    { key: 'cpf', label: 'Informe seu CPF (ou digite "pular").' },
+    { key: 'rg', label: 'Informe seu RG (ou digite "pular").' },
+    { key: 'function', label: 'Informe sua função ou cargo.' },
+    { key: 'app', label: 'Utilizará o aplicativo Viptech? Responda "sim" ou "não".' },
+    { key: 'pass_app', label: 'Defina a senha de acesso ao aplicativo.' },
+    { key: 'pass_alr', label: 'Informe a senha do alarme (4 dígitos).' },
+    { key: 'pass_verbal', label: 'Informe a senha verbal (contrassenha).' }
 ];
 
 let chatStep = 0;
 let chatData = {};
 
-function addMsg(text, sender) {
+// sender: 'bot' | 'user'; tone: '' | 'warn' | 'ok'
+function addMsg(text, sender, tone = '') {
     const box = document.getElementById('chatHistory');
     const msg = document.createElement('div');
-    msg.className = `msg ${sender}`;
+    msg.className = `msg ${sender} ${tone}`.trim();
     msg.innerHTML = text;
     box.appendChild(msg);
     box.scrollTop = box.scrollHeight;
 }
 
 function startChat() {
+    addMsg(`Atendimento de cadastro iniciado. Dispositivo detectado: <strong>${escapeHtml(deviceMeta.type)}</strong>.`, 'bot');
+
     if (clienteLocked) {
         chatData['cliente'] = clienteParam;
-        syncChatToForm('cliente', clienteParam); // 🔄 Garante que o formulário receba o valor no inicio
+        syncChatToForm('cliente', clienteParam);
         chatStep = 1;
-        addMsg(`Olá! Sou o assistente de cadastro. Detectei que você está acessando via <strong>${deviceMeta.type}</strong>.`, 'bot');
-        setTimeout(() => addMsg(`Cliente já definido como <strong>${clienteParam}</strong> ✅`, 'bot'), 350);
-        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 750);
+        setTimeout(() => addMsg(`Cliente definido pelo link de acesso: <strong>${escapeHtml(clienteParam)}</strong>.`, 'bot', 'ok'), 300);
+        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 600);
     } else {
-        addMsg(`Olá! Sou o assistente de cadastro. Detectei que você está acessando via <strong>${deviceMeta.type}</strong>.`, 'bot');
-        setTimeout(() => addMsg(chatSteps[0].label, 'bot'), 400);
+        setTimeout(() => addMsg(chatSteps[0].label, 'bot'), 300);
     }
 }
 
@@ -267,90 +300,89 @@ async function sendChatAnswer() {
     if (!val) return;
 
     const currentKey = chatSteps[chatStep].key;
-
-    // Lista de chaves obrigatórias
     const requiredKeys = ['cliente', 'name', 'email', 'phone', 'pass_alr', 'pass_verbal'];
 
     // Bloqueia "pular" em campos obrigatórios
     if (requiredKeys.includes(currentKey) && val.toLowerCase() === 'pular') {
-        addMsg(val, 'user');
+        addMsg(escapeHtml(val), 'user');
         input.value = '';
-        setTimeout(() => addMsg('⚠️ Este campo é obrigatório e não pode ser pulado. Por favor, informe o dado solicitado:', 'bot'), 300);
+        setTimeout(() => addMsg('Este campo é obrigatório. Informe o dado solicitado.', 'bot', 'warn'), 250);
         return;
     }
 
-    // Validação da Senha do Alarme (exatamente 4 dígitos numéricos)
+    // Senha do alarme: exatamente 4 dígitos
     if (currentKey === 'pass_alr') {
-        const cleanVal = val.replace(/\D/g, '');
-        if (cleanVal.length !== 4 || val.length !== 4) {
-            addMsg(val, 'user');
+        if (!/^\d{4}$/.test(val)) {
+            addMsg('••••', 'user');
             input.value = '';
-            setTimeout(() => addMsg('⚠️ A Senha do Alarme precisa ter exatamente 4 dígitos numéricos. Tente novamente:', 'bot'), 300);
+            setTimeout(() => addMsg('A senha do alarme deve ter exatamente 4 dígitos numéricos. Tente novamente.', 'bot', 'warn'), 250);
             return;
         }
     }
 
-    addMsg(val, 'user');
+    // Senhas não ficam visíveis no histórico do chat
+    const isSecret = ['pass_app', 'pass_alr', 'pass_verbal'].includes(currentKey);
+    addMsg(isSecret ? '••••••' : escapeHtml(val), 'user');
     input.value = '';
 
-    // Lógica para o campo do APLICATIVO
+    // Campo do aplicativo
     if (currentKey === 'app') {
-        const isYes = val.toLowerCase().includes('s') || val.toLowerCase() === 'sim';
+        const normalized = val.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const isYes = /^s/.test(normalized);
         chatData['app'] = isYes;
-        syncChatToForm('app', isYes); // 🔄 Sincroniza o checkbox no formulário
+        syncChatToForm('app', isYes);
 
         if (isYes) {
             if (!chatData['email'] || chatData['email'].trim() === '') {
                 setTimeout(() => {
-                    addMsg('⚠️ Para utilizar o Aplicativo Viptech, é obrigatório possuir um e-mail cadastrado.', 'bot');
-                    chatSteps.splice(chatStep + 1, 0, { key: 'email_retry', label: 'Por favor, informe seu e-mail para o acesso ao App:' });
+                    addMsg('Para utilizar o aplicativo Viptech é obrigatório ter um e-mail cadastrado.', 'bot', 'warn');
+                    chatSteps.splice(chatStep + 1, 0, { key: 'email_retry', label: 'Informe seu e-mail para o acesso ao aplicativo.' });
                     chatStep++;
                     addMsg(chatSteps[chatStep].label, 'bot');
-                }, 400);
+                }, 300);
                 return;
             }
 
             if (deviceMeta.os === 'android' || deviceMeta.os === 'ios') {
                 const url = APP_URLS[deviceMeta.os];
                 setTimeout(() => {
-                    addMsg(`Baixe o app se necessário: <a href="${url}" target="_blank" style="color:var(--accent); font-weight:bold;">Clique Aqui para Baixar</a>.`, 'bot');
-                }, 300);
+                    addMsg(`Se ainda não instalou, <a href="${url}" target="_blank" rel="noopener noreferrer">baixe o aplicativo aqui</a>.`, 'bot');
+                }, 250);
             }
         } else {
             chatData['pass_app'] = '';
-            syncChatToForm('pass_app', ''); // 🔄 Limpa a senha do app no formulário
+            syncChatToForm('pass_app', '');
             const passAppIndex = chatSteps.findIndex(step => step.key === 'pass_app');
             if (passAppIndex !== -1 && chatStep < passAppIndex) {
-                chatStep = passAppIndex; 
+                chatStep = passAppIndex;
             }
         }
-    } 
-    // Re-tentativa de e-mail (caso o usuário tenha sido obrigado a informar após aceitar o app)
+    }
+    // Nova tentativa de e-mail
     else if (currentKey === 'email_retry') {
         if (val.toLowerCase() === 'pular' || !val) {
-            setTimeout(() => addMsg('⚠️ É necessário informar um e-mail válido para usar o aplicativo:', 'bot'), 300);
+            setTimeout(() => addMsg('É necessário informar um e-mail válido para usar o aplicativo.', 'bot', 'warn'), 250);
             return;
         }
         chatData['email'] = val;
-        syncChatToForm('email', val); // 🔄 Sincroniza o e-mail no formulário
-    } 
-    // Captura os demais campos
+        syncChatToForm('email', val);
+    }
+    // Demais campos
     else {
         const finalVal = (val.toLowerCase() === 'pular') ? '' : val;
         chatData[currentKey] = finalVal;
-        syncChatToForm(currentKey, finalVal); // 🔄 Sincroniza o campo no formulário em tempo real
+        syncChatToForm(currentKey, finalVal);
     }
 
     chatStep++;
 
-    // Próxima pergunta ou envio
     if (chatStep < chatSteps.length) {
-        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 500);
+        setTimeout(() => addMsg(chatSteps[chatStep].label, 'bot'), 400);
     } else {
         setTimeout(async () => {
-            addMsg('Obrigado! Salvando suas credenciais...', 'bot');
+            addMsg('Enviando cadastro...', 'bot');
             await sendPayload({ device: deviceMeta.type, device_meta: deviceMeta, ...chatData }, 'chat');
-        }, 600);
+        }, 500);
     }
 }
 
@@ -363,55 +395,51 @@ async function sendPayload(data, origin) {
         });
 
         if (res.ok) {
-            // 🚫 Desabilita o formulário tradicional para evitar envios duplicados
+            // Desabilita o formulário para evitar envios duplicados
             const form = document.getElementById('traditionalForm');
             if (form) {
-                // Desativa todos os campos e o botão de envio do formulário
-                const elements = form.querySelectorAll('input, button');
-                elements.forEach(el => el.disabled = true);
-                
-                // Oculta o formulário e exibe a tela de sucesso
+                form.querySelectorAll('input, button').forEach(el => el.disabled = true);
                 form.style.display = 'none';
-                document.getElementById('success-screen').style.display = 'flex';
+                document.getElementById('success-screen').style.display = 'block';
             }
 
             if (origin === 'chat') {
-                addMsg('✅ Cadastro realizado com sucesso!', 'bot');
-                // Oculta a área de digitação do chat para impedir novos envios pelo bot
+                addMsg('Cadastro enviado com sucesso.', 'bot', 'ok');
                 const chatInputGroup = document.getElementById('chatInputGroup');
-                if (chatInputGroup) {
-                    chatInputGroup.style.display = 'none';
-                }
+                if (chatInputGroup) chatInputGroup.style.display = 'none';
             }
-        } else {
-            alert('Erro ao enviar o cadastro. Tente novamente.');
+            return true;
         }
+
+        alert('Não foi possível enviar o cadastro. Tente novamente.');
+        return false;
     } catch (e) {
         console.error('Erro no envio:', e);
-        alert('Erro na conexão com o servidor.');
+        alert('Falha na conexão com o servidor. Verifique sua internet e tente novamente.');
+        return false;
     }
 }
 
-// Máscara de Telefone: (00) 0000-0000 ou (00) 00000-0000
+// Máscara de telefone: (00) 0000-0000 ou (00) 00000-0000
 function formatarTelefone(value) {
-    value = value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2'); // Coloca parênteses no DDD
-    value = value.replace(/(\d)(\d{4})$/, '$1-$2'); // Coloca hífen nos últimos 4 dígitos
+    value = value.replace(/\D/g, '');
+    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+    value = value.replace(/(\d)(\d{4})$/, '$1-$2');
     return value;
 }
 
 // Máscara de CPF: 000.000.000-00
 function formatarCPF(value) {
-    value = value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Ponto após os primeiros 3 dígitos
-    value = value.replace(/(\d{3})(\d)/, '$1.$2'); // Ponto após os 6 dígitos
-    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2'); // Hífen após os 9 dígitos
+    value = value.replace(/\D/g, '');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d)/, '$1.$2');
+    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     return value;
 }
 
-// Máscara de RG: 00.000.000-X (Aceita números e 'X'/'x' no final)
+// Máscara de RG: 00.000.000-X
 function formatarRG(value) {
-    value = value.replace(/[^0-9Xx]/g, ''); // Permite números e a letra X
+    value = value.replace(/[^0-9Xx]/g, '');
     value = value.replace(/(\d{2})(\d)/, '$1.$2');
     value = value.replace(/(\d{3})(\d)/, '$1.$2');
     value = value.replace(/(\d{3})([0-9Xx]{1})$/, '$1-$2');
@@ -419,7 +447,7 @@ function formatarRG(value) {
 }
 
 async function toggleVistStatus(id, currentStatus) {
-    const newStatus = !currentStatus; // Inverte true -> false ou false -> true
+    const newStatus = !currentStatus;
 
     try {
         const res = await fetch(`${API_BASE}/admin/passwords/${id}/status`, {
@@ -429,41 +457,17 @@ async function toggleVistStatus(id, currentStatus) {
         });
 
         if (res.ok) {
-            // Recarrega a tabela para atualizar a interface com o novo status
             loadAdminData();
         } else {
             alert('Não foi possível atualizar o status do registro.');
         }
     } catch (e) {
         console.error('Erro ao atualizar status:', e);
-        alert('Erro ao se conectar com o servidor.');
+        alert('Falha na conexão com o servidor.');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const tooltips = document.querySelectorAll('.info-tooltip');
-
-    tooltips.forEach(tooltip => {
-        tooltip.addEventListener('click', (e) => {
-            e.stopPropagation(); // Evita que o evento feche o tooltip imediatamente
-            
-            // Fecha outros tooltips abertos antes de abrir o atual
-            tooltips.forEach(item => {
-                if (item !== tooltip) item.classList.remove('active');
-            });
-
-            // Alterna a exibição no elemento clicado
-            tooltip.classList.toggle('active');
-        });
-    });
-
-    // Se o usuário tocar fora do tooltip, ele fecha
-    document.addEventListener('click', () => {
-        tooltips.forEach(tooltip => tooltip.classList.remove('active'));
-    });
-});
-
-// Função que sincroniza os dados do Chat diretamente nos inputs do Formulário HTML
+// Sincroniza as respostas do chat com os inputs do formulário
 function syncChatToForm(key, value) {
     const mapKeysToInputIds = {
         cliente: 'f_search_client',
@@ -478,25 +482,21 @@ function syncChatToForm(key, value) {
         pass_verbal: 'f_pass_verbal'
     };
 
-    // Preenche o input correspondente no formulário se ele existir
     if (mapKeysToInputIds[key]) {
         const inputEl = document.getElementById(mapKeysToInputIds[key]);
         if (inputEl) {
             inputEl.value = value;
-            
-            // Caso seja o campo cliente, preenchemos também o campo oculto
             if (key === 'cliente') {
                 document.getElementById('f_cliente_selected').value = value;
             }
         }
     }
 
-    // Se o campo for a resposta do Aplicativo (checkbox/toggle)
     if (key === 'app') {
         const appCheckbox = document.getElementById('f_app');
         if (appCheckbox) {
             appCheckbox.checked = value;
-            toggleAppInput(value); // Ativa/desativa o campo de senha do App no formulário
+            toggleAppInput(value);
         }
     }
 }
